@@ -1,0 +1,92 @@
+#Just to see full content of the file
+file = open('/content/sample.txt','r')
+print(file.read())
+#reading a file character by character
+charac=0
+number=0
+special_symbols=0
+with open('sample.txt', 'r', encoding='utf-8') as file:
+    while True:
+        char = file.read(1)
+        if not char:
+          break
+        if char.isalpha():
+          charac += 1
+        elif char.isdigit():
+          number += 1
+        else:
+          special_symbols += 1
+
+
+print("Total characters : ",charac)
+print("Total constants : ", number)
+print("Total special symbols : ",special_symbols)
+
+#2
+#checking if each word is keyword or constant or identifier
+words=[]
+with open('sample.txt','r') as file:
+  for line in file:
+    for word in line.split():
+      words.append(word)
+print(words)
+import re
+import keyword
+keyword_list=['main','printf','auto', 'break', 'case', 'char', 'const', 'continue', 'default', 'do', 'double', 'else', 'enum', 'extern', 'float', 'for', 'goto', 'if', 'inline', 'int', 'long', 'register', 'restrict', 'return', 'short', 'signed', 'sizeof', 'static', 'struct', 'switch', 'typedef', 'union', 'unsigned', 'void', 'volatile', 'while', '_Alignas', '_Alignof', '_Atomic', '_Bool', '_Complex', '_Generic', '_Imaginary', '_Noreturn', '_Static_assert', '_Thread_local']
+ops = ['+', '-', '*', '/', '=', '<', '>', '<=', '>=', '&', '|', '^', '(', ')']
+
+ident = '^[A-Za-z_][A-Za-z0-9_]*'
+num = '^[0-9]'
+pre_dir='^[#<]'
+
+
+identifier=0
+id=[]
+
+constant=0
+cd=[]
+
+keyword=0
+kd=[]
+
+pre_dirc=0
+pd=[]
+
+operators=0
+od=[]
+
+spec=0
+sd=[]
+
+for i in words:
+  if i in keyword_list:
+    kd.append(i)
+    keyword+=1
+  elif re.search(ident,i):
+    id.append(i)
+    identifier+=1
+  elif re.search(num,i):
+    cd.append(i)
+    constant+=1
+  elif re.search(pre_dir,i):
+    pre_dirc+=1
+    pd.append(i)
+  elif i in ops:
+    od.append(i)
+    operators+=1
+  else:
+    sd.append(i)
+    spec+=1
+
+print("Keyword : ",keyword)
+print(list(set(kd)))
+print("\nidentifier : ",identifier)
+print(list(set(id)))
+print("\nConstant : ",constant)
+print(list(set(cd)))
+print("\npreprocessing directives : ",pre_dirc)
+print(list(set(pd)))
+print("\nOperators : ",operators)
+print(list(set(od)))
+print("\nSpecial characters : ",spec)
+print(list(set(sd)))

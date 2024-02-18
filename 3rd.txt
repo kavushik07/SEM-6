@@ -1,0 +1,143 @@
+
+'''
+1. Construct external symbol table from the object programs.
+
+Example :
+Input object programs
+
+H_Prog1_001000_1E
+D_A1_1010_A2_101C_A3_1020
+R_B1_C1
+T_...........................
+M_.....................
+E_001000
+
+H_Prog2_001000_1E
+D_B1_101A_B2_101D_B3_1024
+R_A1_C3
+T_...........................
+M_.....................
+E_001000
+
+H_Prog3_001000_1E
+D_C1_2000_C2_201C_C3_2021
+R_A1_B1_B2
+T_...........................
+M_.....................
+E_001000
+
+External Symbol Table :
+
+Symbol  Assembler   Address of  Runtime     Address of  Referred in
+        Starting    Symbol      Starting    Symbol
+        Address                 Address
+
+A1	Program 1 1000	1010	Random address (eg. 6000)	6010	Program 2 and Program 3
+A2		101C		601C
+A3		1020		6020
+B1	Program 2 1000	101A	Random address	-
+B2		101D		-
+B3		1024		-
+C1	Program 3 1000	2000	Random address	-
+C2		201C		-
+C3		2021		-
+
+'''
+
+from random import randint
+
+# Removing whitespace and empty lines :
+def remove(lines) :
+
+    lines = [line.strip() for line in lines if line != '\n']
+
+    return lines
+
+
+# Address calculation :
+def addr(pStrt, rStrt, sAddr) :  # Input is a hexadecimal number.
+    return hex(int(hex( int(sAddr, 16) - int(pStrt, 16) )[2 : ], 16) + int(rStrt, 16) )[2:]
+
+    '''
+        pStrt => Starting address of program.
+        rStrt => Runtime starting address.
+        sAddr => Address of symbol.
+    '''
+
+
+# Function to print table from dictionary :
+def printTable(t) :
+    '''print('-----------------------------------------------------------------------------------')
+    print('|{0:^10s} | {1:^15s} | {2:^15s} | {3:^15s} | {4:^15s} | {5:<8s}|'.format('Symbol', 'A Strt Addr', 'Symbol Addr', 'R Strt Addr', 'symbol Addr', 'Ref'))
+    for k, v in t.items() :
+        print('|{0:^10s} | {1:^15s} | {2:^15s} | {3:^15s} | {4:^15s} | {5}|'.format(k, v[0], v[1], v[2], v[3], ', '.join(v[4:])))
+
+    print('-----------------------------------------------------------------------------------')'''
+
+    print('{0:^10s} {1:^15s} {2:^15s} {3:^15s} {4:^15s} {5:<8s}\n'.format('Symbol', 'A Strt Addr', 'Symbol Addr', 'R Strt Addr', 'symbol Addr', 'Ref'))
+    for k, v in t.items() :
+        print('{0:^10s} {1:^15s} {2:^15s} {3:^15s} {4:^15s} {5}'.format(k, v[0], v[1], v[2], v[3], ', '.join(v[4:])))
+
+
+
+# Reading program from the file :
+with open('prgrm.txt') as file :
+    lines = file.readlines()
+
+
+# Removing whitespace and empty lines :
+lines = remove(lines)
+
+# Number of lines
+n = len(lines)
+
+# Dictionary to store all details of symbols.
+symbol = {}
+
+# Dictionary to store the details of each variable.
+table = {}
+
+# Dictionary to store the reference for each symbol.
+ref = {}
+
+# storing address and program name for each symbol defined :
+for i in range(0, n, 6) :
+
+    name = lines[i].split('_')[1]  # Program name.
+
+    strtAddr = lines[i].split('_')[2][2 : ]  # Program's starting address.
+
+    var = lines[i + 1].split('_')[1 : ]  # Deals with D_... line.
+
+    # Runtime Starting address of each program.
+    strt = str(randint(1000, 10000))  # Hexadecimal value.
+
+    #print('strt', strt)
+
+    # Storing address and program of each symbol
+    for j in range(0, len(var), 2) :
+        symbol[var[j]] = [var[j + 1], name, strtAddr, strt]
+
+    # Dealing with references :
+    r = lines[i + 2].split('_')[1 : ]
+
+    for symbl in r :
+        if symbl not in ref :
+            ref[symbl] = [name]
+
+        else :
+            ref[symbl] += [name]
+
+
+# Creating table :
+for k, v in symbol.items() :
+
+    table[k] = [v[2], v[0], v[-1], addr(v[2], v[-1], v[0])]
+
+    if k in ref :
+        table[k] += ref[k]
+
+# Displaying the output :
+print('\nTable :\n')
+printTable(table)
+print()

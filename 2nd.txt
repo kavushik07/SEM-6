@@ -1,0 +1,308 @@
+
+# 1.
+
+'''
+
+Implementing Pre-Processor Expansion
+
+Input :
+#define PI 3.14
+main()
+{
+    printf(“PI value is:”,PI);
+}
+
+
+Output :
+main()
+{
+    printf(“PI value is”,3.14);
+}
+
+'''
+
+import string
+
+# Processing the C file :
+with open('sample.c') as file :
+    code = file.read()  # Full code as one string.
+
+lines = code.split('\n')  # Each line is a stored as an individual string.
+
+print('\nGiven code :\n')
+print(lines)
+
+# FINDING STARTING OF MAIN FUNCTION :
+bound = 0
+
+for i in range(len(lines)) :
+    if 'main' in lines[i] :
+        bound = i
+        break
+
+# Stores the Macro and it's expansion.
+expansion = {}
+
+# PROCESSING THE PREPROCESSOR :
+for line in lines :
+
+    tokens = line.split(" ", 3)
+    #print(tokens)
+
+    if tokens[0] == '#define' :
+        expansion[tokens[1]] = tokens[2]
+
+
+# REPLACING THE MACRO :
+for i in range(bound, len(lines)) :
+
+    for k, v in expansion.items() :
+
+        if 'printf' in lines[i] and ',' in lines[i]:
+
+            endQ = len(lines[i]) - lines[i][::-1].index('\"') - 1
+            first = lines[i][: endQ + 2]
+
+            second = lines[i].split(',')[1].replace(k, v)
+
+            lines[i] = first + second
+
+        elif k in lines[i] :
+            lines[i] = lines[i].replace(k, v)
+
+
+# PRINTING THE RESULT :
+print('\nAfter Preprocessing :\n')
+print(lines)
+print()
+
+
+# 2.
+
+'''
+Multiple line Macro :
+
+Input :
+#define forloop for(i = 0;i < n;i++)\
+                {\
+                for(j = 0;j < n;j++)\
+                {\
+                printf("%d", a[i][j]);\
+                }\
+                }
+
+main()
+{
+
+    int i, j, n = 2, a[10][10];
+    for(i = 0;i < n;i++)
+    {
+        for(j = 0;j < n;j++)
+        {
+            scanf("%d", &a[i][j]);
+        }
+    }
+
+    forloop
+
+}
+
+Output :
+main()
+{
+
+    int i, j, n = 2, a[10][10];
+    for(i = 0;i < n;i++)
+    {
+        for(j = 0;j < n;j++)
+        {
+            scanf("%d", &a[i][j]);
+        }
+    }
+
+    for(i = 0;i < n;i++)
+    {
+        for(j = 0;j < n;j++)
+        {
+            printf("%d", a[i][j]);
+        }
+    }
+}
+
+'''
+
+import string
+
+# Getting data from file :
+with open('macromulti.c', 'r') as file :
+    lines = file.readlines()
+
+
+# User variables :
+n = len(lines)
+i = 0
+expansion = {}
+
+# Processing the MACROS :
+while i < n :
+    l = lines[i].strip()  # Removing white spaces.
+
+    # Stop checking for macros when you reach main function :
+    if 'main' in l :
+        break
+
+    tokens = l.split(' ', 2)  # Splitting into list of words.
+
+    if '#define' in tokens[0]:
+
+        if tokens[-1][-1] == '\\' :
+
+            macroLines = ''
+
+            temp = lines[i].split(' ', 2)[2].strip()
+
+            while temp[-1] == '\\' :
+
+                macroLines += temp[:-1] + '\n'
+
+                i += 1
+
+                temp = lines[i].strip()
+
+
+            macroLines += lines[i] + '\n'
+
+            expansion[tokens[1]] = macroLines
+
+        else :
+            expansion[tokens[1]] = tokens[-1]
+
+    i += 1
+
+# Outer loop traverses the code line by line
+for indx in range(i, n) :
+
+    # Inner loop traverses the macro dictionary(expansion).
+    for k, v in expansion.items() :
+
+        # If there current lines has a string.
+        if 'printf' in lines[indx] :
+
+            # Finding the index of second double quote.
+            QIndx = len(lines[indx]) - lines[indx][::-1].index('\"') - 1
+
+            lines[indx] = lines[indx][ : QIndx] + lines[indx][QIndx : ].replace(k, v)
+
+        else :
+            lines[indx] = lines[indx].replace(k, v)
+
+print('code')
+print(*lines)
+
+
+
+# 3.
+
+'''
+Write a program to convert assembly language program (SIC) into machine code.
+    o LDA loads the accumulator with the number of the associated variable
+    o STA moves accumulator content to the associated variable
+    o LDCH and STCH are similar to LDA and STA but used for a character
+    o RESW reserves a word (3 bytes)
+    o WORD reserves a word and assigns 5 to it
+    o BYTE reserves a byte and assigns 'Z' to it
+    o RESB reserves a byte
+
+Input :
+        LDA FIVE
+        STA ALPHA
+        LDCH CHAR
+        STCH C1
+    ALPHA RESW 1
+    FIVE WORD 5
+    CHAR BYTE C'Z'
+    C1 RESB 1
+
+Output :
+
+    Assuming starting address as 1000 and each instruction needs 3 bytes (machine code) inside main memory. Read each instruction twice. During
+    first read, assign addresses and during second read, generate machine code.
+
+    1000 LDA FIVE 00100F
+    1003 STA ALPHA 0C100C
+    1006 LDCH CHAR 501012
+    1009 STCH C1 541013
+    100C ALPHA RESW 1
+    100F FIVE WORD 5 000005
+    1012 CHAR BYTE C'Z' Hex of 'Z'
+    1013 C1 RESB 1
+
+'''
+
+# Dictionary of opcodes.
+opcodes = {'LDA' : '00', 'STA' : '0c', 'LDCH' : '50', 'STCH' : '54'}
+
+# Function to display the machine code :
+def display(l) :
+    for i in range(len(l)) :
+        print(l[i])
+
+# Reading Assembly Code from file :
+with open('asml.txt') as file :
+    inp = file.readlines()
+
+
+# Number of instructions.
+n = len(inp)
+
+# Pre Processing the Code :
+for i in range(n) :
+    inp[i] = inp[i].strip().split()
+
+
+# Start Address.
+strtAddr = hex(0x1000)
+
+# Assigning address to each instruction :
+for i in range(n) :
+
+    #inp[i] = [strtAddr[2:]] + inp[i]
+    if len(inp[i]) == 2 :
+        inp[i] = [strtAddr[2:]] + inp[i]
+        strtAddr = hex(int(strtAddr, 16) + 3)
+
+    elif inp[i][1].upper() == 'RESB' :
+        inp[i] = [strtAddr[2:]] + inp[i]
+        strtAddr = hex(int(strtAddr, 16) + 1)
+
+    elif inp[i][1].upper() == 'BYTE' :
+        inp[i] = [strtAddr[2:]] + inp[i]
+        strtAddr = hex(int(strtAddr, 16) + len(inp[i][-1]) - 2)
+
+    else :
+        inp[i] = [strtAddr[2:]] + inp[i]
+        strtAddr = hex(int(strtAddr, 16) + 3)
+
+# Dictionary to store the variable and corresponding address.
+addr = {}
+
+# Storing the address for each variable :
+for i in range(n) :
+    if len(inp[i]) == 4 :
+        addr[inp[i][1]] = inp[i][0]
+
+# assigning opcodes to each instruction :
+for i in range(n) :
+    if len(inp[i]) == 3 :
+        inp[i] += [opcodes[inp[i][1]] + addr[inp[i][2]]]
+
+    else :
+        if inp[i][2] == 'WORD' :
+            inp[i] += ['000005']
+
+        if inp[i][2] == 'BYTE' :
+            inp[i] += ['Hex of ' + inp[i][3]]
+
+print('\nAssembly Language program into Machine Code :\n')
+display(inp)
+print()

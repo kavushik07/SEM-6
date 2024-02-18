@@ -1,0 +1,321 @@
+
+'''
+    a. Write a program to construct NFA from given regular expression.
+
+        Method:
+            Split the expression into smaller subexpressions based on the precedence of the operators. eg. (a|b)* -
+            Symbols : {r1: a, r2: b} Expressions: {r3: a|b, r4: (a|b)*}
+
+        Construct NFA for the symbols and combine them using the expressions.
+
+        Example:
+        For symbol r1: a, 2 new states are to be introduced.
+
+
+
+ϵ
+a
+b
+0-r1
+-
+{1-r1}
+-
+1-r1
+-
+-
+-
+
+
+        For symbol r2: b, 2 new states are to be introduced.
+
+
+
+ϵ
+a
+b
+0-r2
+-
+-
+{1-r2}
+1-r2
+-
+-
+-
+
+
+        For expression r3: a|b, create NFA as follows,
+
+
+ϵ
+a
+b
+0-r3
+{0-r1,0-r2}
+-
+-
+0-r1
+-
+{1-r1}
+-
+1-r1
+{1-r3}
+-
+-
+0-r2
+-
+-
+{1-r2}
+1-r2
+{1-r3}
+-
+-
+1-r3
+-
+-
+-
+
+
+        For expression r4:(a|b)*, create NFA as follows,
+
+ϵ
+a
+b
+0-r4
+{0-r3,1-r4}
+-
+-
+0-r3
+{0-r1,0-r2}
+-
+-
+0-r1
+-
+{1-r1}
+-
+1-r1
+{1-r3}
+-
+-
+0-r2
+-
+-
+{1-r2}
+1-r2
+{1-r3}
+-
+-
+1-r3
+{0-r3,1-r4}
+
+
+-
+1-r4
+-
+-
+-
+
+
+'''
+
+# Inputting number of expressions :
+eCount = int(input("\nEnter number of expressions : "))
+
+
+# List to store all the expressions.
+exps = []
+
+# Inputting all the expressions :
+z = 0
+while z < eCount :
+    exp = input('\nEnter expression {c} : '.format(c = z + 1))
+    exps += [exp]
+
+    z += 1
+
+print(exps)
+
+
+table = []
+
+for exp in exps :
+    if exp.isalpha() :
+
+        tmp = {}
+
+
+
+''' b. Write a program to find ϵ-closure for each state in a given NFA. '''
+
+from prettytable import PrettyTable
+
+# Function to create a list of states :
+def create_states(c) :
+
+    # List of states.
+    states = ['-']  # NO state.
+
+    for i in range(c) :
+        states += ['q' + str(i)]
+
+    return states
+
+# Function to check whether a state is valid or not :
+def isState(s, states) :
+    return s in states
+
+# Function to print the NFA :
+def printNFA(NFA, inp) :
+
+    # Creating a PrettyTable object.
+    table = PrettyTable(['States'] + inp + ['Epsilon'])
+
+    for k, v in NFA.items() :
+        table.add_row([k] + v)
+
+    print(table)
+
+# Function to find epsilon closure of a given NFA :
+def EClosure(NFA) :
+
+    # Epsilon closures.
+    ans = {}
+
+    for k, v in NFA.items() :
+
+        # Has some epsilon productions :
+        if v[-1] != [] :
+
+            # Curr state has only self Epsilon production :
+            if v[-1] == [k] :
+                ans[k] = [k]
+
+            # Curr state has outgoing epsilon productions :
+            else :
+
+                # Epsilon closure of current state.
+                closr = v[-1]
+
+                # Adding curr state to ɛ closure of curr state.
+                if k not in closr :
+                    closr = [k] + closr
+
+                #ans[k] = closr
+
+                i = 1
+                while i < len(closr) :
+
+                    # Current state to be checked for Epsilon closures :
+                    s = closr[i]
+
+                    # Epsilon closure of current state.
+                    currClosr = NFA[s][-1]
+
+                    for s in currClosr :
+                        if s not in closr :
+                            closr += [s]
+
+                    i += 1
+
+                ans[k] = closr
+
+        # Curr state doesn't have any epsilon production :
+        else :
+            ans[k] = [k]
+
+    return ans
+
+
+# Function to print the Epsilon Closure :
+def printEC(E) :
+    table = PrettyTable(['State', 'Epsilon Closures'])
+
+    for k, v in E.items() :
+        table.add_row([k, v])
+
+    print(table)
+
+
+# NFA Table(Dictionary) :
+NFA = {}
+
+# Number of inputs.
+inputCount = int(input("\nEnter number of inputs : "))
+
+# Enter all the inputs :
+inputs = list(map(str, input("\nEnter all the inputs(in order) : ").split()))
+
+# Number of states.
+stateCount = int(input("\nEnter number of states : "))
+
+# Creating list of states.
+states = create_states(stateCount)
+
+# Inputing the productions :
+i = 0
+while i < stateCount :
+
+    print('\nState {count} :\n'.format(count = i + 1))
+
+    # Inputting present state.
+    present = input("\tEnter present state : ")
+
+    # If an invalid state is entered loop runs untill valid input :
+    while not isState(present, states) :
+        present = input("\n\tInvalid state!, Enter present state again : ")
+
+
+    actions = []
+    print()
+    for j in range(inputCount) :
+
+        action = input("\t\tEnter action for input {inp} : ".format(inp = inputs[j]))
+
+        # If an invalid state is entered loop runs untill valid input :
+        while not isState(action, states) :
+            action = input("\t\tInvalid state!, Enter action for input {inp} : ".format(inp = inputs[j]))
+
+        actions += [action]
+
+    ########################################## Handling Epsilon Productions START ##########################################
+    action = []
+
+    # If there are Epsilon productions :
+    if input('\nEpsilon production ?? (y/n) : ') == 'y' :
+        action = list(map(str, input("\nEnter all the states that can be reached from {p} through epsilon production : ".format(p = present)).split() ))
+
+        # Validating states :
+        for k in range(len(action)) :
+            while not isState(action[k], states) :
+                action[k] = input("\t\tInvalid state!, Enter action again : ")
+
+    actions += [action]
+
+    ########################################## Handling Epsilon Productions END!! ##########################################
+
+    # Adding productions to NFA(dictionary) without overwriting:
+    if present not in NFA :
+        NFA[present] = actions
+
+    else :
+        NFA[present] += actions
+
+    i += 1
+
+# Final state
+final = list(map(str, input("\nEnter final state : ").split()))
+
+for i in range(len(final)) :
+    # If an invalid state is entered loop runs untill valid input :
+    while not isState(final[i], states) :
+        final[i] = input("\t\tInvalid state!, Enter final state again! : ")
+
+print('\nNFA :-\n')
+printNFA(NFA, inputs)
+print()
+
+Eps = EClosure(NFA)
+
+print('\nEpsilon closures :-\n')
+printEC(Eps)
+print()
+

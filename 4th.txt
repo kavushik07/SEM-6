@@ -1,0 +1,315 @@
+
+'''
+    a. Write a program to construct symbol table to store all the symbols defined in the source program along with
+    their details. For every variable, store datatype, number of bytes allocated and the initial values assigned to
+    them. For every function, store function name, number of arguments, list of arguments, data type of arguments
+    and the return data type.
+'''
+
+# Reading the code :
+with open('code1.c') as file :
+    lines = file.readlines()
+
+#print(*lines)
+
+# Data types and number of bytes in c :
+dTypes = {'int' : 2, 'float' : 4, 'char' : 1, 'double' : 8, 'void' : 8}
+
+# Dictionary to store the variables and corresponding info about it.
+variables = {}
+'''
+Name
+Data type
+Bytes
+Initial value
+'''
+
+# Dictionary to store the functions and corresponding info about it.
+functions = {}
+'''
+Name
+Return type
+No.of arguments
+List of arguments
+data type of arguments
+'''
+
+i = 0
+
+while i < len(lines) :
+
+    # Splits the line into words.
+    words = lines[i].strip().split(' ', 1)
+
+    # If current line starts with a DATA TYPE :
+    if words[0] in dTypes :
+
+        # Checking for FUNCTION declaration :
+        if '(' in words[1] :
+
+            # Not a function PROTOTYPE.
+            if lines[i + 1][0] == '{' :  # Assume.
+
+                # Data type of parameters.
+                Adtype = []
+
+                # Name of function.
+                name = words[1].split('(')[0]
+
+                # Parameters of function.
+                arg = words[1].split('(')[1]
+
+                # No Parameters :
+                if arg == ')' :
+                    arg = []
+
+                # Has Paramaters :
+                else :
+                    arg = arg.split(',')
+
+                    for j in range(len(arg)) :
+                        arg[j] = arg[j].strip()
+
+                        # Removing ');' from name
+                        if j == len(arg) - 1 :
+                            arg[j] = arg[j][ : -1]
+
+                        # Contains datatype and parameter([int, a]).
+                        para = arg[j].split()
+
+                        Adtype += [para[0]]
+                        arg[j] = para[1]
+
+
+                functions[name] = [words[0], len(arg), arg, Adtype]
+
+
+        # VARIABLE declaration :
+        else :
+
+            vars = words[1]
+
+            #if '{' in vars :
+
+            # Split line with ',' as delimiter :
+            vars = vars.split(',')
+
+            for var in vars :
+
+                # Variable not initialized.
+                if '=' not in var :
+
+                    # Stripping the ';' (IF):
+                    if var[-1] == ';' :
+                        var = var.strip(';')
+
+                    # Arrays declared :
+                    if var[-1] == ']' :
+                        sOpen = var.index('[')
+                        variables[var[:sOpen]] = [words[0] + '[]', dTypes[words[0]] * int(var[sOpen + 1 : -1]), 'None']
+
+                    # Normal variable :
+                    else :
+                        variables[var[:-1] if var[-1] == ';' else var] = [words[0], dTypes[words[0]], 'None']
+
+                # Variable initialized.
+                else :
+                    var = var.split('=')
+                    variables[var[0].strip()] = [words[0], dTypes[words[0]], var[-1].strip()]
+
+    i += 1
+
+print('\nFunctions :\n')
+print(functions)
+
+print('\nvariables :\n')
+print(variables)
+print()
+
+
+
+'''
+    b. Write a program to list out all the strings (10 strings in case of Closure operator) accepted by a given regular
+    expression.
+'''
+
+'''
+    - means positive closure.
+'''
+
+# Alphabets in the language :
+alp = ['a', 'b']
+
+# Regular Expression :
+regex = '(a + b)*'
+
+# Output list :
+ans = []
+
+
+if '*' in regex :
+
+    ans += ['ɛ']
+
+    # Character the has a KLEEN CLOSURE :
+    char = regex[regex.index('*') - 1]
+
+    for i in range(10) :
+        ans += [char * (i + 1)]
+
+print('\nWords :\n')
+print(ans)
+print()
+
+
+'''
+    c. Write a program to check whether the given string is accepted by the given DFA or not. DFA can be given as a table.
+'''
+
+'''
+    States => a, b, c, ...
+    Inputs => 0, 1, 2, ...
+    word contains only 0's and 1's.
+'''
+
+from prettytable import PrettyTable
+import collections
+
+# ------------------------ CREATE STATES START ----------------------------------
+
+# Function to create a list of states :
+def create_states(c) :
+
+    # List of states.
+    states = []
+
+    for i in range(c) :
+        states += ['q' + str(i)]
+
+    return states
+
+# ------------------------ CREATE STATES END ----------------------------------
+
+
+# ------------------------ IS STATE START ----------------------------------
+
+# Function to check whether a state is valid or not :
+def isState(s, states) :
+    return s in states
+
+# ------------------------ IS STATE END ----------------------------------
+
+
+# Function to check whether the word satisfies given DFA :
+def isWord(word, f, DFA, inputs) :
+
+    # Creating a dictionary for easy index find.
+    inp = {}
+
+    for i in range(len(inputs)) :
+        inp[inputs[i]] = i
+
+    curr = 'q0'
+
+    for char in word :
+        curr = DFA[curr][inp[char]]
+
+    return curr in f
+
+# Function to print the DFA :
+def printDFA(DFA, inp) :
+
+    # Creating a PrettyTable object.
+    table = PrettyTable(['States'] + inp)
+
+    for k, v in DFA.items() :
+        table.add_row([k] + v)
+
+    print(table)
+
+    '''
+    print('\n------------------------------------------')
+    print('| {0:^8s} |'.format('States'), end = ' ')
+    for i in range(len(inp)) :
+        print(' {0:^6s} |'.format(inputs[i]), end = " ")
+    print('\n------------------------------------------')
+
+    for k, v in DFA.items() :
+        print('| {0:^8s} |'.format(k), end = ' ')
+
+        for i in range(len(v)) :
+            print(' {0:^6s} |'.format(v[i]), end = " ")
+
+        print()
+    print('------------------------------------------\n')'''
+
+
+# DFA Table(Dictionary) :
+DFA = {}
+
+# Number of inputs.
+inputCount = int(input("\nEnter number of inputs : "))
+
+# Enter all the inputs :
+inputs = list(map(str, input("\nEnter all the inputs(in order) : ").split()))
+
+# Number of states.
+stateCount = int(input("\nEnter number of states : "))
+
+# List of states.
+states = create_states(stateCount)
+
+# Number of rows.
+row = int(input("\nEnter number of rows the DFA Table has : "))
+
+# Inputing the productions :
+
+i = 0
+while i < row :
+
+    print('\nRow {indx} :\n'.format(indx = i + 1))
+
+    # Inputting present state.
+    present = input("\tEnter present state : ")
+
+    # If an invalid state is entered loop runs untill valid input :
+    while not isState(present, states) :
+        present = input("\n\tInvalid state!, Enter present state again : ")
+
+
+    actions = []
+    print()
+    for j in range(inputCount) :
+
+        action = input("\t\tEnter action for input {inp} : ".format(inp = inputs[j]))
+
+        # If an invalid state is entered loop runs untill valid input :
+        while not isState(action, states) :
+            action = input("\t\tInvalid state!, Enter action for input {inp} : ".format(inp = inputs[j]))
+
+        actions += [action]
+
+    # Adding productions to DFA(dictionary) :
+    if present not in DFA :
+        DFA[present] = actions
+
+    else :
+        DFA[present] += actions
+
+    i += 1
+
+# Final state
+final = list(map(str, input("\nEnter all the final states : ").split()))
+
+for i in range(len(final)) :
+    # If an invalid state is entered loop runs untill valid input :
+    while not isState(final[i], states) :
+        final[i] = input("\t\tInvalid state!, Enter final state again! : ")
+
+print()
+printDFA(DFA, inputs)
+print()
+
+word = input("\nEnter a word to check in given DFA : ")
+
+print('\nThe word is accepted\n') if isWord(word, final, DFA, inputs) else print('\nThe word is not accepted\n')
